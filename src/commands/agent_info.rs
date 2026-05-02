@@ -68,7 +68,7 @@ pub fn run() {
             "agent-info": {"description": "This manifest", "aliases": ["info"], "args": [], "options": []},
             "skill install": {"description": "Install skill file to agent platforms", "args": [], "options": []},
             "skill status": {"description": "Check skill installation status", "args": [], "options": []},
-            "config show/path/init/set/get": {"description": "Manage ~/.config/gemini-tts-cli/config.toml", "args": [], "options": []},
+            "config show/path/init/set/get": {"description": "Manage ~/.config/gemtts/config.toml", "args": [], "options": []},
             "update": {
                 "description": "Check crates.io version and print source-aware cargo/Homebrew update guidance.",
                 "args": [],

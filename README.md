@@ -1,4 +1,4 @@
-# gemini-tts-cli
+# gemtts
 
 Agent-friendly Gemini text-to-speech CLI for expressive scripts, voices, tags, languages, and audio files.
 
@@ -7,7 +7,7 @@ It is built around practical use by AI agents: the binary explains itself with `
 ## Install
 
 ```bash
-cargo install gemini-tts-cli
+cargo install gemtts
 ```
 
 For compressed output formats, install `ffmpeg`:
@@ -19,11 +19,11 @@ brew install ffmpeg
 ## Quick Start
 
 ```bash
-gemini-tts-cli auth import-env
-gemini-tts-cli doctor --live
+gemtts auth import-env
+gemtts doctor --live
 
-gemini-tts-cli speak "Say warmly: Gemini TTS is ready." --voice Kore -o ready.wav
-gemini-tts-cli speak "[whispers] This part is quiet." --voice Achernar -o whisper.mp3 --format mp3
+gemtts speak "Say warmly: Gemini TTS is ready." --voice Kore -o ready.wav
+gemtts speak "[whispers] This part is quiet." --voice Achernar -o whisper.mp3 --format mp3
 ```
 
 WAV and raw PCM are written directly. MP3, M4A, and FLAC use `ffmpeg`.
@@ -39,28 +39,28 @@ accent"` when the accent matters.
 Discover the command contract:
 
 ```bash
-gemini-tts-cli agent-info
+gemtts agent-info
 ```
 
 Choose a voice:
 
 ```bash
-gemini-tts-cli voices list
-gemini-tts-cli voices recommend "warm expert narrator for medical guidance"
+gemtts voices list
+gemtts voices recommend "warm expert narrator for medical guidance"
 ```
 
 Find tags and prompt recipes:
 
 ```bash
-gemini-tts-cli tags list
-gemini-tts-cli tags search whisper
-gemini-tts-cli tags recipes
+gemtts tags list
+gemtts tags search whisper
+gemtts tags recipes
 ```
 
 Build a structured prompt before generation:
 
 ```bash
-gemini-tts-cli script "Welcome back. The audio pipeline is ready." \
+gemtts script "Welcome back. The audio pipeline is ready." \
   --style "warm expert narrator with a slight smile" \
   --accent "British English from London" \
   --tag "[warmly]" \
@@ -70,13 +70,13 @@ gemini-tts-cli script "Welcome back. The audio pipeline is ready." \
 Generate from a script:
 
 ```bash
-gemini-tts-cli speak prompt.txt --text-file --voice Sulafat -o narration.wav
+gemtts speak prompt.txt --text-file --voice Sulafat -o narration.wav
 ```
 
 Multi-speaker dialogue:
 
 ```bash
-gemini-tts-cli speak dialogue.txt --text-file \
+gemtts speak dialogue.txt --text-file \
   --speaker Host=Kore \
   --speaker Guest=Puck \
   -o dialogue.mp3
@@ -122,7 +122,7 @@ Use director notes for global tone. Use square-bracket tags for local changes:
 Run lint before important jobs:
 
 ```bash
-gemini-tts-cli lint prompt.txt --text-file
+gemtts lint prompt.txt --text-file
 ```
 
 The linter checks for long takes, tag inflation, app-specific `[[tts]]` wrappers, and multi-speaker name mismatches. This is based on current Gemini TTS docs and public issue patterns: preserve Gemini tags, keep tags in English, avoid over-specifying every sentence, and split long takes when quality matters.
@@ -136,26 +136,26 @@ Gemini returned non-empty PCM audio.
 Config lives at:
 
 ```text
-~/.config/gemini-tts-cli/config.toml
+~/.config/gemtts/config.toml
 ```
 
 Commands:
 
 ```bash
-gemini-tts-cli config init
-gemini-tts-cli config show
-gemini-tts-cli config set defaults.voice Sulafat
-gemini-tts-cli config set defaults.audio_format mp3
-gemini-tts-cli config get keys.api_key
-gemini-tts-cli update --check
+gemtts config init
+gemtts config show
+gemtts config set defaults.voice Sulafat
+gemtts config set defaults.audio_format mp3
+gemtts config get keys.api_key
+gemtts update --check
 ```
 
 API key sources:
 
 ```bash
 export GEMINI_API_KEY=...
-gemini-tts-cli auth import-env
-gemini-tts-cli auth status
+gemtts auth import-env
+gemtts auth status
 ```
 
 Secrets are masked in command output. The config file is written with `0600` permissions on Unix.

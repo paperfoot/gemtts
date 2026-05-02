@@ -1,4 +1,4 @@
-//! Agent-friendly Gemini TTS CLI built with agent-cli-framework.
+//! Agent-friendly gemtts built with agent-cli-framework.
 //!
 //! Demonstrates every pattern from the framework:
 //!   - Modular structure (cli, config, error, output, commands/)

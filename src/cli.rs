@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 const HELP_FOOTER: &str = r#"Tips:
-  * Fast path: gemini-tts-cli speak "Say warmly: hello" -o hello.wav
-  * Tags pass through: gemini-tts-cli speak "[whispers] this part is quiet" --voice Achernar
+  * Fast path: gemtts speak "Say warmly: hello" -o hello.wav
+  * Tags pass through: gemtts speak "[whispers] this part is quiet" --voice Achernar
   * Add direction only when useful: --style, --pace, --accent, --scene, --profile
   * Use script first when an agent is authoring performance text, then pipe that prompt into speak
   * Run voices recommend "excited podcast host" or tags list to choose better defaults
@@ -12,11 +12,11 @@ const HELP_FOOTER: &str = r#"Tips:
   * Run doctor --live before important jobs to verify the API key and model actually produce audio
 
 Examples:
-  gemini-tts-cli speak "Say cheerfully: Have a wonderful day!" --voice Kore -o day.wav
-  gemini-tts-cli script "Welcome back." --style "calm expert narrator" --accent "London English" --tag "[warmly]"
-  gemini-tts-cli speak script.txt --text-file --speaker Joe=Kore --speaker Jane=Puck -o dialogue.mp3
-  gemini-tts-cli voices recommend "sleepy intimate audiobook"
-  gemini-tts-cli auth import-env
+  gemtts speak "Say cheerfully: Have a wonderful day!" --voice Kore -o day.wav
+  gemtts script "Welcome back." --style "calm expert narrator" --accent "London English" --tag "[warmly]"
+  gemtts speak script.txt --text-file --speaker Joe=Kore --speaker Jane=Puck -o dialogue.mp3
+  gemtts voices recommend "sleepy intimate audiobook"
+  gemtts auth import-env
 "#;
 
 #[derive(Parser)]
@@ -320,9 +320,9 @@ pub struct DoctorArgs {
 
 #[derive(Subcommand)]
 pub enum AuthAction {
-    /// Save an API key into ~/.config/gemini-tts-cli/config.toml
+    /// Save an API key into ~/.config/gemtts/config.toml
     Set {
-        /// Gemini API key. Prefer GEMINI_API_KEY=... gemini-tts-cli auth import-env for shell history safety.
+        /// Gemini API key. Prefer GEMINI_API_KEY=... gemtts auth import-env for shell history safety.
         #[arg(long)]
         api_key: String,
     },

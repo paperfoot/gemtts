@@ -1,6 +1,6 @@
 /// Configuration loading with 3-tier precedence:
 ///   1. Compiled defaults
-///   2. TOML config file (~/.config/gemini-tts-cli/config.toml)
+///   2. TOML config file (~/.config/gemtts/config.toml)
 ///   3. Environment variables (GEMINI_TTS__* nested config, plus GEMINI_API_KEY)
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -11,6 +11,7 @@ use crate::error::AppError;
 
 pub const ENV_PREFIX: &str = "GEMINI_TTS_";
 const API_KEY_ENV_VARS: [&str; 3] = ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_AI_API_KEY"];
+const LEGACY_PACKAGE_NAME: &str = "gemini-tts-cli";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
@@ -181,7 +182,7 @@ fn default_update_owner() -> String {
 }
 
 fn default_update_repo() -> String {
-    "gemini-tts-cli".into()
+    "gemtts".into()
 }
 
 pub fn config_dir() -> PathBuf {
@@ -198,6 +199,29 @@ pub fn config_dir() -> PathBuf {
 
 pub fn config_path() -> PathBuf {
     config_dir().join("config.toml")
+}
+
+fn legacy_config_path() -> Option<PathBuf> {
+    if std::env::var("GEMINI_TTS_CONFIG_DIR").is_ok() {
+        return None;
+    }
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".into());
+    Some(
+        PathBuf::from(home)
+            .join(".config")
+            .join(LEGACY_PACKAGE_NAME)
+            .join("config.toml"),
+    )
+}
+
+pub fn existing_config_path() -> Option<PathBuf> {
+    let current = config_path();
+    if current.exists() {
+        return Some(current);
+    }
+    legacy_config_path().filter(|path| path.exists())
 }
 
 pub fn state_dir() -> PathBuf {
@@ -229,7 +253,12 @@ pub fn load() -> Result<AppConfig, AppError> {
     use figment::Figment;
     use figment::providers::{Env, Format as _, Serialized, Toml};
 
-    Figment::from(Serialized::defaults(AppConfig::default()))
+    let mut figment = Figment::from(Serialized::defaults(AppConfig::default()));
+    if let Some(path) = legacy_config_path().filter(|path| path.exists()) {
+        figment = figment.merge(Toml::file(path));
+    }
+
+    figment
         .merge(Toml::file(config_path()))
         .merge(Env::prefixed(ENV_PREFIX).split("__"))
         .extract()

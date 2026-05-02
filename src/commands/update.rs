@@ -32,18 +32,22 @@ pub fn run(ctx: Ctx, check: bool, _config: &crate::config::AppConfig) -> Result<
     let name = env!("CARGO_PKG_NAME");
     let (install_source, update_command) = detect_install_source(name);
     let latest = latest_crates_version(name)?;
-    let version_order = compare_versions(current, &latest);
+    let version_order = latest
+        .as_deref()
+        .map(|latest| compare_versions(current, latest));
     let status = match (version_order, check) {
-        (Ordering::Equal, _) => "up_to_date",
-        (Ordering::Less, true) => "update_available",
-        (Ordering::Less, false) => "manual_update_required",
-        (Ordering::Greater, _) => "ahead_of_registry",
+        (None, _) => "not_published",
+        (Some(Ordering::Equal), _) => "up_to_date",
+        (Some(Ordering::Less), true) => "update_available",
+        (Some(Ordering::Less), false) => "manual_update_required",
+        (Some(Ordering::Greater), _) => "ahead_of_registry",
     };
     let message = if check {
         match version_order {
-            Ordering::Equal => format!("{name} is up to date."),
-            Ordering::Less => format!("Update available. Run: {update_command}"),
-            Ordering::Greater => format!(
+            None => format!("{name} is not published on crates.io yet."),
+            Some(Ordering::Equal) => format!("{name} is up to date."),
+            Some(Ordering::Less) => format!("Update available. Run: {update_command}"),
+            Some(Ordering::Greater) => format!(
                 "{name} is newer than the latest crates.io version; publish before packaging."
             ),
         }
@@ -53,7 +57,7 @@ pub fn run(ctx: Ctx, check: bool, _config: &crate::config::AppConfig) -> Result<
 
     let result = UpdateResult {
         current_version: current.into(),
-        latest_version: Some(latest),
+        latest_version: latest,
         status: status.into(),
         install_source: install_source.into(),
         update_command,
@@ -91,7 +95,7 @@ fn parse_version(version: &str) -> Vec<u64> {
         .collect()
 }
 
-fn latest_crates_version(name: &str) -> Result<String, AppError> {
+fn latest_crates_version(name: &str) -> Result<Option<String>, AppError> {
     let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
     let url = format!("https://crates.io/api/v1/crates/{name}");
     let response = client
@@ -104,6 +108,9 @@ fn latest_crates_version(name: &str) -> Result<String, AppError> {
     let status = response.status();
     let text = response.text()?;
     if !status.is_success() {
+        if status.as_u16() == 404 {
+            return Ok(None);
+        }
         return Err(AppError::Transient(format!(
             "crates.io version check failed ({status}): {}",
             text.trim()
@@ -111,7 +118,7 @@ fn latest_crates_version(name: &str) -> Result<String, AppError> {
     }
     let parsed: CratesResponse = serde_json::from_str(&text)
         .map_err(|e| AppError::Transient(format!("crates.io returned invalid JSON: {e}")))?;
-    Ok(parsed.krate.max_version)
+    Ok(Some(parsed.krate.max_version))
 }
 
 fn detect_install_source(name: &str) -> (&'static str, String) {

@@ -142,3 +142,26 @@ fn env_api_key_overrides_config_key() {
             "\"api_key_source\": \"GEMINI_API_KEY\"",
         ));
 }
+
+#[test]
+fn legacy_gemini_tts_cli_config_is_loaded_after_rename() {
+    let tmp = tempfile::tempdir().unwrap();
+    let legacy_dir = tmp.path().join(".config").join("gemini-tts-cli");
+    std::fs::create_dir_all(&legacy_dir).unwrap();
+    std::fs::write(
+        legacy_dir.join("config.toml"),
+        "[keys]\napi_key = \"legacy-key-123456\"\n",
+    )
+    .unwrap();
+
+    bin()
+        .env("HOME", tmp.path())
+        .env_remove("GEMINI_API_KEY")
+        .env_remove("GOOGLE_API_KEY")
+        .env_remove("GOOGLE_AI_API_KEY")
+        .args(["config", "show", "--json"])
+        .assert()
+        .code(0)
+        .stdout(predicates::str::contains("\"api_key_source\": \"config\""))
+        .stdout(predicates::str::contains("lega...3456"));
+}

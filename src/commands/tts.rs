@@ -209,10 +209,16 @@ pub fn doctor(
 ) -> Result<(), AppError> {
     let mut checks = Vec::new();
     let path = config::config_path();
+    let existing_path = config::existing_config_path();
     checks.push(DoctorCheck {
         name: "config_file".into(),
-        status: if path.exists() { "pass" } else { "warn" }.into(),
-        message: if path.exists() {
+        status: if existing_path.is_some() {
+            "pass"
+        } else {
+            "warn"
+        }
+        .into(),
+        message: if let Some(path) = existing_path {
             path.display().to_string()
         } else {
             format!(
@@ -220,7 +226,7 @@ pub fn doctor(
                 path.display()
             )
         },
-        suggestion: if path.exists() {
+        suggestion: if config::existing_config_path().is_some() {
             None
         } else {
             Some(format!("Run {} config init", env!("CARGO_PKG_NAME")))

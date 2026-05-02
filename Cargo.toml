@@ -1,18 +1,18 @@
 [package]
-name = "gemini-tts-cli"
+name = "gemtts"
 version = "0.1.1"
 edition = "2024"
 rust-version = "1.85"
 description = "Agent-friendly Gemini text-to-speech CLI for expressive scripts, voices, tags, and audio files"
 license = "MIT"
-repository = "https://github.com/paperfoot/gemini-tts-cli"
-homepage = "https://github.com/paperfoot/gemini-tts-cli"
+repository = "https://github.com/paperfoot/gemtts"
+homepage = "https://github.com/paperfoot/gemtts"
 readme = "README.md"
 keywords = ["gemini", "tts", "speech", "audio", "cli"]
 categories = ["command-line-utilities", "multimedia::audio"]
 
 [[bin]]
-name = "gemini-tts-cli"
+name = "gemtts"
 path = "src/main.rs"
 
 [dependencies]
