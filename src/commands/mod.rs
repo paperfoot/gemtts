@@ -6,3 +6,4 @@ pub mod contract;
 pub mod skill;
 pub mod tts;
 pub mod update;
+pub mod usage;

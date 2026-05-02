@@ -88,6 +88,11 @@ pub enum Commands {
         #[arg(long)]
         check: bool,
     },
+    /// Inspect saved token and cost estimates
+    Usage {
+        #[command(subcommand)]
+        action: UsageAction,
+    },
     /// Hidden: deterministic exit-code trigger for contract tests
     #[command(hide = true)]
     Contract {
@@ -360,4 +365,18 @@ pub enum ConfigAction {
         /// Key path.
         key: String,
     },
+}
+
+#[derive(Subcommand)]
+pub enum UsageAction {
+    /// Summarize all saved TTS generation usage records
+    Summary,
+    /// List recent saved TTS generation usage records
+    List {
+        /// Number of recent records to show
+        #[arg(short, long, default_value = "20")]
+        limit: usize,
+    },
+    /// Print the usage ledger JSONL path
+    Path,
 }

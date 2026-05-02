@@ -9,6 +9,7 @@ use crate::gemini::{self, GenerateRequest};
 use crate::guard::GenerationGuard;
 use crate::output::{self, Ctx};
 use crate::prompt::{self, LintFinding};
+use crate::usage;
 
 #[derive(Serialize)]
 struct SpeakResult {
@@ -18,6 +19,8 @@ struct SpeakResult {
     mime_type: String,
     prompt_chars: usize,
     transcript_chars: usize,
+    usage: usage::UsageEstimate,
+    usage_ledger_path: String,
     structured_prompt: bool,
     warnings: Vec<String>,
     speakers: Vec<prompt::SpeakerVoice>,
@@ -63,6 +66,27 @@ pub fn speak(ctx: Ctx, args: SpeakArgs, config: &AppConfig) -> Result<(), AppErr
         config.defaults.sample_rate,
         config.defaults.channels,
     )?;
+    let usage_estimate = usage::estimate(
+        generated.pcm.len(),
+        config.defaults.sample_rate,
+        config.defaults.channels,
+        generated.prompt_chars,
+        &generated.usage,
+    );
+    let usage_record = usage::UsageRecord {
+        created_unix_seconds: usage::now_unix_seconds(),
+        command: "speak".into(),
+        model: model.clone(),
+        voice: voice.clone(),
+        speakers: prompt_build.speakers.clone(),
+        output_path: audio.path.clone(),
+        output_format: audio.format,
+        prompt_chars: generated.prompt_chars,
+        transcript_chars: prompt_build.transcript_chars,
+        api_usage: generated.usage.clone(),
+        estimate: usage_estimate.clone(),
+    };
+    usage::append_record(&usage_record)?;
 
     if args.play {
         audio::play(&args.out)?;
@@ -75,6 +99,8 @@ pub fn speak(ctx: Ctx, args: SpeakArgs, config: &AppConfig) -> Result<(), AppErr
         mime_type: generated.mime_type,
         prompt_chars: generated.prompt_chars,
         transcript_chars: prompt_build.transcript_chars,
+        usage: usage_estimate,
+        usage_ledger_path: usage::usage_path().display().to_string(),
         structured_prompt: prompt_build.structured,
         warnings: prompt_build.warnings,
         speakers: prompt_build.speakers,
@@ -87,6 +113,13 @@ pub fn speak(ctx: Ctx, args: SpeakArgs, config: &AppConfig) -> Result<(), AppErr
             r.audio.path,
             r.audio.format,
             r.audio.bytes_written
+        );
+        println!(
+            "estimated cost: ${:.6} ({} input tokens, {} audio tokens, {:.2}s)",
+            r.usage.total_cost_usd,
+            r.usage.input_tokens,
+            r.usage.audio_output_tokens,
+            r.usage.audio_seconds
         );
         if !r.warnings.is_empty() {
             for warning in &r.warnings {

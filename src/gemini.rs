@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use crate::error::AppError;
 use crate::prompt::SpeakerVoice;
+use crate::usage::{self, ApiUsageMetadata};
 
 #[derive(Debug, Clone)]
 pub struct GenerateRequest {
@@ -22,6 +23,7 @@ pub struct GenerateResponse {
     pub mime_type: String,
     pub model: String,
     pub prompt_chars: usize,
+    pub usage: ApiUsageMetadata,
 }
 
 pub fn generate(api_key: &str, request: &GenerateRequest) -> Result<GenerateResponse, AppError> {
@@ -88,6 +90,7 @@ fn generate_once(
         mime_type: mime_type.unwrap_or_else(|| "audio/l16; rate=24000; channels=1".into()),
         model: request.model.clone(),
         prompt_chars: request.prompt.chars().count(),
+        usage: usage::api_usage_from_response(&json),
     })
 }
 

@@ -73,6 +73,11 @@ pub fn run() {
                 "description": "Check crates.io version and print source-aware cargo/Homebrew update guidance.",
                 "args": [],
                 "options": [{"name": "--check", "type": "bool", "required": false, "default": false}]
+            },
+            "usage summary/list/path": {
+                "description": "Inspect saved token and cost estimates from TTS generations. Ledger is JSONL under the state directory.",
+                "args": [],
+                "options": [{"name": "--limit", "type": "integer", "default": 20}]
             }
         },
         "agent_guidance": {
@@ -80,6 +85,7 @@ pub fn run() {
             "author_first": format!("{name} script \"Welcome back\" --style \"warm expert narrator\" --tag \"[warmly]\" --json"),
             "quality_gate": format!("{name} lint script.txt --text-file --json"),
             "before_important_jobs": format!("{name} doctor --live --json"),
+            "check_spend": format!("{name} usage summary --json"),
             "prompt_rules": [
                 "Use global director notes for style, pace, accent, and language; use inline square-bracket tags only for local changes.",
                 "The 30 Gemini voice names are prebuilt voice timbres, not per-language voices.",
@@ -118,6 +124,17 @@ pub fn run() {
             "sample_rate": 24000,
             "channels": 1,
             "stdout_contract": "stdout is metadata only; audio is written to --out"
+        },
+        "usage_tracking": {
+            "ledger": "JSONL file under ~/.local/share/gemtts/usage.jsonl unless GEMINI_TTS_STATE_DIR is set",
+            "input_tokens": "Uses Gemini usageMetadata.promptTokenCount when available; otherwise estimates from prompt characters.",
+            "audio_output_tokens": "Uses Gemini usageMetadata.candidatesTokenCount when available; otherwise estimates from decoded PCM duration at Google's published 25 audio tokens per second.",
+            "pricing": {
+                "standard_input_usd_per_1m_text_tokens": 1.0,
+                "standard_audio_output_usd_per_1m_audio_tokens": 20.0,
+                "batch_input_usd_per_1m_text_tokens": 0.5,
+                "batch_audio_output_usd_per_1m_audio_tokens": 10.0
+            }
         },
         "google_tts_facts": {
             "endpoint": "POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",

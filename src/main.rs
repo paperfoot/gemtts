@@ -10,7 +10,7 @@
 //!   - `skill install` to register with AI agent platforms
 //!   - `doctor` for API/ffmpeg diagnostics
 //!   - expressive TTS script, voice, tag, and audio generation commands
-//!   - `update` for self-update via GitHub Releases
+//!   - `usage` for token and cost estimates
 
 mod audio;
 mod catalog;
@@ -22,6 +22,7 @@ mod gemini;
 mod guard;
 mod output;
 mod prompt;
+mod usage;
 
 use clap::Parser;
 
@@ -108,6 +109,7 @@ fn main() {
         Commands::Update { check } => {
             config::load().and_then(|cfg| commands::update::run(ctx, check, &cfg))
         }
+        Commands::Usage { action } => commands::usage::run(ctx, action),
         Commands::Contract { code } => commands::contract::run(ctx, code),
     };
 

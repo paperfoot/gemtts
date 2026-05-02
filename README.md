@@ -148,6 +148,7 @@ gemtts config set defaults.voice Sulafat
 gemtts config set defaults.audio_format mp3
 gemtts config get keys.api_key
 gemtts update --check
+gemtts usage summary
 ```
 
 API key sources:
@@ -180,6 +181,29 @@ In a terminal, commands render human-readable output. When piped or with `--json
 ```
 
 Audio is always written to `--out`. Stdout stays metadata-only so agents can pipe it safely.
+
+## Usage And Cost Estimates
+
+Every successful `speak` call appends a JSONL record to:
+
+```text
+~/.local/share/gemtts/usage.jsonl
+```
+
+Commands:
+
+```bash
+gemtts usage summary
+gemtts usage list --limit 10
+gemtts usage path
+```
+
+The ledger stores Gemini `usageMetadata` when the API returns it, plus an audio
+duration estimate from decoded PCM. Cost estimates use Google Gemini 3.1 Flash
+TTS standard paid pricing: `$1.00 / 1M` text input tokens and `$20.00 / 1M`
+audio output tokens, with audio output counted as 25 tokens per second. Free
+tier usage may be charged at `$0`; treat the CLI number as a conservative paid
+tier estimate, not a billing statement.
 
 ## Exit Codes
 

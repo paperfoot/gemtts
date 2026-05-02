@@ -164,6 +164,26 @@ fn auth_status_is_routable() {
 }
 
 #[test]
+fn usage_commands_are_routable() {
+    let tmp = tempfile::tempdir().unwrap();
+    bin()
+        .env("HOME", tmp.path())
+        .args(["usage", "summary"])
+        .assert()
+        .code(0);
+    bin()
+        .env("HOME", tmp.path())
+        .args(["usage", "list", "--limit", "3"])
+        .assert()
+        .code(0);
+    bin()
+        .env("HOME", tmp.path())
+        .args(["usage", "path"])
+        .assert()
+        .code(0);
+}
+
+#[test]
 fn script_uses_explicit_transcript_preamble() {
     let out = bin()
         .args(["script", "Hello there", "--json"])
@@ -232,5 +252,16 @@ fn google_tts_facts_are_documented_for_agents() {
             .as_str()
             .unwrap()
             .contains("auto-detects")
+    );
+}
+
+#[test]
+fn usage_tracking_is_documented_for_agents() {
+    let info = agent_info();
+    let usage = &info["usage_tracking"];
+    assert!(usage["ledger"].as_str().unwrap().contains("usage.jsonl"));
+    assert_eq!(
+        usage["pricing"]["standard_audio_output_usd_per_1m_audio_tokens"],
+        20.0
     );
 }

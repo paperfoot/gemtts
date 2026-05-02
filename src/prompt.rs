@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 use crate::catalog;
@@ -6,7 +6,7 @@ use crate::cli::{ScriptArgs, SpeakArgs};
 use crate::config::AppConfig;
 use crate::error::AppError;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpeakerVoice {
     pub speaker: String,
     pub voice: String,
