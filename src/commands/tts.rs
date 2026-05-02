@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::audio::{self, AudioWriteResult};
 use crate::catalog;
-use crate::cli::{LintArgs, ScriptArgs, SpeakArgs};
+use crate::cli::{AudioFormat, LintArgs, ScriptArgs, SpeakArgs};
 use crate::config::{self, AppConfig};
 use crate::error::AppError;
 use crate::gemini::{self, GenerateRequest};
@@ -336,12 +336,54 @@ pub fn doctor(
                 timeout_seconds: config.defaults.timeout_seconds,
             };
             match gemini::generate(&api_key, &request) {
-                Ok(audio) if !audio.pcm.is_empty() => checks.push(DoctorCheck {
-                    name: "live_audio".into(),
-                    status: "pass".into(),
-                    message: format!("{} bytes, {}", audio.pcm.len(), audio.mime_type),
-                    suggestion: None,
-                }),
+                Ok(audio) if !audio.pcm.is_empty() => {
+                    let usage_estimate = usage::estimate(
+                        audio.pcm.len(),
+                        config.defaults.sample_rate,
+                        config.defaults.channels,
+                        audio.prompt_chars,
+                        &audio.usage,
+                    );
+                    let usage_record = usage::UsageRecord {
+                        created_unix_seconds: usage::now_unix_seconds(),
+                        command: "doctor --live".into(),
+                        model: request.model.clone(),
+                        voice: request.voice.clone(),
+                        speakers: Vec::new(),
+                        output_path: "(discarded live check audio)".into(),
+                        output_format: AudioFormat::Pcm,
+                        prompt_chars: audio.prompt_chars,
+                        transcript_chars: request.prompt.chars().count(),
+                        api_usage: audio.usage.clone(),
+                        estimate: usage_estimate,
+                    };
+                    let usage_message = match usage::append_record(&usage_record) {
+                        Ok(()) => "usage logged",
+                        Err(e) => {
+                            checks.push(DoctorCheck {
+                                name: "usage_ledger".into(),
+                                status: "fail".into(),
+                                message: e.to_string(),
+                                suggestion: Some(
+                                    "Check write permissions for the gemtts state directory."
+                                        .into(),
+                                ),
+                            });
+                            "usage logging failed"
+                        }
+                    };
+                    checks.push(DoctorCheck {
+                        name: "live_audio".into(),
+                        status: "pass".into(),
+                        message: format!(
+                            "{} bytes, {}; {}",
+                            audio.pcm.len(),
+                            audio.mime_type,
+                            usage_message
+                        ),
+                        suggestion: None,
+                    });
+                }
                 Ok(_) => checks.push(DoctorCheck {
                     name: "live_audio".into(),
                     status: "fail".into(),

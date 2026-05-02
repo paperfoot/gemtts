@@ -75,7 +75,7 @@ pub fn run() {
                 "options": [{"name": "--check", "type": "bool", "required": false, "default": false}]
             },
             "usage summary/list/path": {
-                "description": "Inspect saved token and cost estimates from TTS generations. Ledger is JSONL under the state directory.",
+                "description": "Inspect saved token and cost estimates from TTS generations, including speak and doctor --live. Ledger is JSONL under the state directory.",
                 "args": [],
                 "options": [{"name": "--limit", "type": "integer", "default": 20}]
             }

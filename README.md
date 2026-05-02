@@ -184,7 +184,8 @@ Audio is always written to `--out`. Stdout stays metadata-only so agents can pip
 
 ## Usage And Cost Estimates
 
-Every successful `speak` call appends a JSONL record to:
+Every successful TTS generation call, including `speak` and `doctor --live`,
+appends a JSONL record to:
 
 ```text
 ~/.local/share/gemtts/usage.jsonl
