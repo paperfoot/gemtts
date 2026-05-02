@@ -70,7 +70,9 @@ impl AppError {
             ),
             Self::Transient(_) | Self::Io(_) | Self::Http(_) => "Retry the command",
             Self::Audio(_) => "Run doctor --require-ffmpeg, or use --format wav",
-            Self::RateLimited(_) => "Wait a moment and retry",
+            Self::RateLimited(_) => {
+                "Inspect the quota metric and retry-after value; wait for the reported window or check AI Studio rate limits and billing status"
+            }
             Self::Update(_) => concat!(
                 "Retry later, or install manually via cargo install ",
                 env!("CARGO_PKG_NAME")

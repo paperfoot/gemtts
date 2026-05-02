@@ -106,7 +106,7 @@ pub fn run() {
             "1": "Transient error (IO, network, audio encoder) -- retry or fix dependency",
             "2": "Config error -- fix setup/key",
             "3": "Bad input -- fix arguments",
-            "4": "Rate limited -- wait and retry"
+            "4": "Rate limited -- inspect quota metric and retry-after details, then wait or adjust tier/request rate"
         },
         "envelope": {
             "version": "1",
@@ -135,6 +135,11 @@ pub fn run() {
                 "batch_input_usd_per_1m_text_tokens": 0.5,
                 "batch_audio_output_usd_per_1m_audio_tokens": 10.0
             }
+        },
+        "rate_limit_policy": {
+            "source_of_truth": "For live API failures, use the Google error details returned by doctor --live --json for the API key currently configured.",
+            "dashboard_caveat": "AI Studio rate-limit dashboards are project-scoped; confirm the selected project matches the API key used by the CLI before comparing RPM/RPD numbers.",
+            "credit_caveat": "A quota/rate-limit error is not proof by itself that prepaid credits are depleted. Check AI Studio billing for credit balance."
         },
         "google_tts_facts": {
             "endpoint": "POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",

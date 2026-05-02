@@ -206,6 +206,15 @@ audio output tokens, with audio output counted as 25 tokens per second. Free
 tier usage may be charged at `$0`; treat the CLI number as a conservative paid
 tier estimate, not a billing statement.
 
+## Rate Limits
+
+When Google returns `RESOURCE_EXHAUSTED`, `doctor --live --json` includes the
+exact quota metric and retry-after value reported by the Gemini API when they
+are present. Treat these as the source of truth for the API key currently used
+by the CLI. The AI Studio rate-limit dashboard can show a different selected
+project or a lagging/aggregated view, so verify that its project matches the key
+loaded by `gemtts auth status` / `gemtts doctor`.
+
 ## Exit Codes
 
 | Code | Meaning |

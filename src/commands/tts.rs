@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde_json::{Value, json};
 
 use crate::audio::{self, AudioWriteResult};
 use crate::catalog;
@@ -219,6 +220,8 @@ pub struct DoctorCheck {
     pub status: String,
     pub message: String,
     pub suggestion: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
 }
 
 #[derive(Serialize)]
@@ -264,6 +267,7 @@ pub fn doctor(
         } else {
             Some(format!("Run {} config init", env!("CARGO_PKG_NAME")))
         },
+        details: None,
     });
 
     let key = config::api_key(config);
@@ -282,6 +286,7 @@ pub fn doctor(
                 env!("CARGO_PKG_NAME")
             ))
         },
+        details: None,
     });
 
     let ffmpeg = audio::ffmpeg_available();
@@ -305,6 +310,7 @@ pub fn doctor(
         } else {
             Some("Install ffmpeg for compressed audio: brew install ffmpeg".into())
         },
+        details: None,
     });
 
     if live {
@@ -319,13 +325,9 @@ pub fn doctor(
                     status: "pass".into(),
                     message: name,
                     suggestion: None,
+                    details: None,
                 }),
-                Err(e) => checks.push(DoctorCheck {
-                    name: "live_model".into(),
-                    status: if e.exit_code() == 4 { "warn" } else { "fail" }.into(),
-                    message: e.to_string(),
-                    suggestion: Some(e.suggestion().into()),
-                }),
+                Err(e) => checks.push(doctor_error_check("live_model", e)),
             }
 
             let request = GenerateRequest {
@@ -368,6 +370,7 @@ pub fn doctor(
                                     "Check write permissions for the gemtts state directory."
                                         .into(),
                                 ),
+                                details: None,
                             });
                             "usage logging failed"
                         }
@@ -382,6 +385,7 @@ pub fn doctor(
                             usage_message
                         ),
                         suggestion: None,
+                        details: None,
                     });
                 }
                 Ok(_) => checks.push(DoctorCheck {
@@ -389,13 +393,9 @@ pub fn doctor(
                     status: "fail".into(),
                     message: "Gemini returned empty audio data".into(),
                     suggestion: Some("Retry once; if it repeats, check model/key status.".into()),
+                    details: None,
                 }),
-                Err(e) => checks.push(DoctorCheck {
-                    name: "live_audio".into(),
-                    status: if e.exit_code() == 4 { "warn" } else { "fail" }.into(),
-                    message: e.to_string(),
-                    suggestion: Some(e.suggestion().into()),
-                }),
+                Err(e) => checks.push(doctor_error_check("live_audio", e)),
             }
         }
     }
@@ -426,4 +426,43 @@ pub fn doctor(
         std::process::exit(2);
     }
     Ok(())
+}
+
+fn doctor_error_check(name: &str, error: AppError) -> DoctorCheck {
+    let status = if error.exit_code() == 4 {
+        "warn"
+    } else {
+        "fail"
+    };
+    let (suggestion, details) = match &error {
+        AppError::RateLimited(message) => {
+            let info = gemini::rate_limit_info(message);
+            let retry = info.retry_after_seconds.unwrap_or_default();
+            let suggestion = if info.quota_kind.as_deref() == Some("requests_per_day") {
+                "Gemini returned a per-day request quota error for the API key currently used; wait for the Google retry-after window and verify the matching AI Studio project. This is not proof by itself that credits are depleted."
+            } else if retry > 60.0 {
+                "Gemini returned a long retry-after window; wait for that window or check AI Studio rate limits and billing status."
+            } else {
+                "Gemini returned a short rate limit; retry after the reported retry-after window."
+            };
+            (
+                suggestion.to_string(),
+                Some(json!({
+                    "rate_limit": info,
+                    "check_urls": {
+                        "active_rate_limits": "https://aistudio.google.com/ratelimits",
+                        "billing": "https://aistudio.google.com/billing"
+                    }
+                })),
+            )
+        }
+        _ => (error.suggestion().into(), None),
+    };
+    DoctorCheck {
+        name: name.into(),
+        status: status.into(),
+        message: error.to_string(),
+        suggestion: Some(suggestion),
+        details,
+    }
 }
