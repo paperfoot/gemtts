@@ -1,0 +1,35 @@
+[package]
+name = "gemini-tts-cli"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Agent-friendly Gemini text-to-speech CLI for expressive scripts, voices, tags, and audio files"
+license = "MIT"
+repository = "https://github.com/paperfoot/gemini-tts-cli"
+homepage = "https://github.com/paperfoot/gemini-tts-cli"
+readme = "README.md"
+keywords = ["gemini", "tts", "speech", "audio", "cli"]
+categories = ["command-line-utilities", "multimedia::audio"]
+
+[[bin]]
+name = "gemini-tts-cli"
+path = "src/main.rs"
+
+[dependencies]
+base64 = "0.22"
+clap = { version = "4.5", features = ["derive", "env"] }
+comfy-table = "7"
+owo-colors = "4"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+self_update = { version = "0.42", features = ["archive-tar", "compression-flate2"] }
+figment = { version = "0.10", features = ["toml", "env"] }
+directories = "6"
+toml = "0.9"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
