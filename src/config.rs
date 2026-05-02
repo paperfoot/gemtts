@@ -5,6 +5,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use crate::catalog;
 use crate::cli::AudioFormat;
 use crate::error::AppError;
 
@@ -273,10 +274,13 @@ pub fn api_key_from_env() -> Option<(&'static str, String)> {
 }
 
 pub fn api_key(config: &AppConfig) -> Option<(String, String)> {
+    if let Some((source, key)) = api_key_from_env() {
+        return Some((source.into(), key));
+    }
     if !config.keys.api_key.trim().is_empty() {
         return Some(("config".into(), config.keys.api_key.trim().to_string()));
     }
-    api_key_from_env().map(|(source, key)| (source.into(), key))
+    None
 }
 
 pub fn require_api_key(config: &AppConfig) -> Result<(String, String), AppError> {
@@ -341,7 +345,15 @@ pub fn set_value(key: &str, value: &str) -> Result<AppConfig, AppError> {
     match key {
         "keys.api_key" | "api_key" => config.keys.api_key = value,
         "defaults.model" | "model" => config.defaults.model = value,
-        "defaults.voice" | "voice" => config.defaults.voice = value,
+        "defaults.voice" | "voice" => {
+            let Some(voice) = catalog::canonical_voice_name(&value) else {
+                return Err(AppError::InvalidInput(format!(
+                    "unsupported Gemini TTS voice {value:?}. Valid voices: {}",
+                    catalog::voice_names().join(", ")
+                )));
+            };
+            config.defaults.voice = voice.to_string();
+        }
         "defaults.audio_format" | "audio_format" | "format" => {
             config.defaults.audio_format = parse_audio_format(&value)?
         }

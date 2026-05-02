@@ -29,6 +29,24 @@ pub fn generate(api_key: &str, request: &GenerateRequest) -> Result<GenerateResp
         .timeout(Duration::from_secs(request.timeout_seconds.max(10)))
         .build()?;
 
+    let mut attempt = 0;
+    loop {
+        match generate_once(&client, api_key, request) {
+            Ok(response) => return Ok(response),
+            Err(error) if should_retry(&error) && attempt < 2 => {
+                attempt += 1;
+                std::thread::sleep(retry_delay(&error, attempt));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+}
+
+fn generate_once(
+    client: &Client,
+    api_key: &str,
+    request: &GenerateRequest,
+) -> Result<GenerateResponse, AppError> {
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
         request.model
@@ -73,6 +91,38 @@ pub fn generate(api_key: &str, request: &GenerateRequest) -> Result<GenerateResp
     })
 }
 
+fn should_retry(error: &AppError) -> bool {
+    matches!(
+        error,
+        AppError::Transient(_) | AppError::RateLimited(_) | AppError::Http(_)
+    )
+}
+
+fn retry_delay(error: &AppError, attempt: u32) -> Duration {
+    if let AppError::RateLimited(message) = error {
+        if let Some(delay) = parse_retry_delay(message) {
+            return delay;
+        }
+        return Duration::from_secs(2 * attempt as u64);
+    }
+    Duration::from_millis(400 * attempt as u64)
+}
+
+fn parse_retry_delay(message: &str) -> Option<Duration> {
+    let rest = message.split("Please retry in ").nth(1)?;
+    let number = rest
+        .chars()
+        .take_while(|ch| ch.is_ascii_digit() || *ch == '.')
+        .collect::<String>();
+    let seconds = number.parse::<f64>().ok()?;
+    if !seconds.is_finite() || seconds < 0.0 {
+        return None;
+    }
+    Some(Duration::from_millis(
+        (seconds * 1000.0).ceil() as u64 + 500,
+    ))
+}
+
 pub fn request_payload(request: &GenerateRequest) -> Value {
     let speech_config = if request.speakers.is_empty() {
         serde_json::json!({
@@ -113,8 +163,7 @@ pub fn request_payload(request: &GenerateRequest) -> Value {
         "generationConfig": {
             "responseModalities": ["AUDIO"],
             "speechConfig": speech_config
-        },
-        "model": request.model
+        }
     })
 }
 
@@ -186,4 +235,20 @@ pub fn check_model(api_key: &str, model: &str, timeout_seconds: u64) -> Result<S
     let parsed: ModelResponse = serde_json::from_str(&text)
         .map_err(|e| AppError::Transient(format!("model check returned invalid JSON: {e}")))?;
     Ok(parsed.name.unwrap_or_else(|| model.into()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_retry_delay;
+
+    #[test]
+    fn parses_google_retry_hint() {
+        let delay = parse_retry_delay("Quota exceeded. Please retry in 2.830310597s.").unwrap();
+        assert!(delay.as_millis() >= 3_330);
+    }
+
+    #[test]
+    fn missing_retry_hint_returns_none() {
+        assert!(parse_retry_delay("Quota exceeded").is_none());
+    }
 }

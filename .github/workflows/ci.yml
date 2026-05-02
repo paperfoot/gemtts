@@ -19,8 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --check
+      - name: Lint
+        run: cargo clippy --all-targets --locked -- -D warnings
       - name: Build
         run: cargo build --locked
       - name: Test
         run: cargo test --locked
+      - name: Package
+        run: cargo package --locked

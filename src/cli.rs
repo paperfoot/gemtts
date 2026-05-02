@@ -82,7 +82,7 @@ pub enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
-    /// Self-update from GitHub Releases
+    /// Show package-manager update guidance
     Update {
         /// Check only, don't install
         #[arg(long)]
@@ -121,7 +121,7 @@ pub struct SpeakArgs {
     #[arg(long)]
     pub voice: Option<String>,
 
-    /// Multi-speaker mapping NAME=VOICE. Up to 2 speakers.
+    /// Multi-speaker mapping NAME=VOICE. Provide exactly 2 mappings when used.
     #[arg(long, value_name = "NAME=VOICE", num_args = 1..=2)]
     pub speaker: Vec<String>,
 
@@ -145,7 +145,7 @@ pub struct SpeakArgs {
     #[arg(long)]
     pub accent: Option<String>,
 
-    /// Language or locale hint to include in the prompt, for example en-gb or Spanish.
+    /// Prompt-only language hint. Gemini auto-detects language; use codes like it or names like Italian.
     #[arg(long)]
     pub language: Option<String>,
 
@@ -199,7 +199,7 @@ pub struct ScriptArgs {
     #[arg(long)]
     pub accent: Option<String>,
 
-    /// Language or locale hint.
+    /// Prompt-only language hint. Gemini auto-detects language; this is not an API locale field.
     #[arg(long)]
     pub language: Option<String>,
 
@@ -207,7 +207,7 @@ pub struct ScriptArgs {
     #[arg(long, value_name = "TAG")]
     pub tag: Vec<String>,
 
-    /// Multi-speaker mapping NAME=VOICE, used as cast notes in the prompt.
+    /// Multi-speaker mapping NAME=VOICE, used as cast notes. Provide exactly 2 mappings when used.
     #[arg(long, value_name = "NAME=VOICE", num_args = 1..=2)]
     pub speaker: Vec<String>,
 }

@@ -1,6 +1,7 @@
 use serde::Serialize;
 use std::path::Path;
 
+use crate::catalog;
 use crate::cli::{ScriptArgs, SpeakArgs};
 use crate::config::AppConfig;
 use crate::error::AppError;
@@ -136,6 +137,7 @@ fn structured_prompt(transcript: &str, direction: &Direction, config: &AppConfig
         .unwrap_or(&config.prompt.language);
 
     let mut prompt = String::new();
+    prompt.push_str("Synthesize speech for the performance defined below. The audio profile, scene, director notes, cast, and context are direction only. Do not speak them. Speak only the lines under #### TRANSCRIPT.\n\n");
     prompt.push_str("# AUDIO PROFILE: ");
     prompt.push_str(profile);
     prompt.push_str("\n\n## THE SCENE\n");
@@ -186,7 +188,7 @@ fn structured_prompt(transcript: &str, direction: &Direction, config: &AppConfig
     }
 }
 
-pub fn parse_speakers(raw: &[String], config: &AppConfig) -> Result<Vec<SpeakerVoice>, AppError> {
+pub fn parse_speakers(raw: &[String], _config: &AppConfig) -> Result<Vec<SpeakerVoice>, AppError> {
     if raw.len() > 2 {
         return Err(AppError::InvalidInput(
             "Gemini TTS multi-speaker config supports at most 2 speakers".into(),
@@ -218,10 +220,20 @@ pub fn parse_speakers(raw: &[String], config: &AppConfig) -> Result<Vec<SpeakerV
     }
 
     if speakers.len() == 1 {
-        speakers.push(SpeakerVoice {
-            speaker: "Speaker2".into(),
-            voice: config.defaults.voice.clone(),
-        });
+        return Err(AppError::InvalidInput(
+            "multi-speaker TTS requires exactly 2 --speaker NAME=VOICE mappings; use --voice for one speaker".into(),
+        ));
+    }
+
+    for speaker in &mut speakers {
+        let Some(voice) = catalog::canonical_voice_name(&speaker.voice) else {
+            return Err(AppError::InvalidInput(format!(
+                "unsupported Gemini TTS voice {:?}. Valid voices: {}",
+                speaker.voice,
+                catalog::voice_names().join(", ")
+            )));
+        };
+        speaker.voice = voice.to_string();
     }
 
     Ok(speakers)

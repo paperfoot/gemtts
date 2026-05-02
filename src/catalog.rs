@@ -218,14 +218,56 @@ pub fn voices() -> Vec<Voice> {
     ]
 }
 
+pub fn voice_names() -> Vec<&'static str> {
+    voices().into_iter().map(|voice| voice.name).collect()
+}
+
+pub fn canonical_voice_name(name: &str) -> Option<&'static str> {
+    let trimmed = name.trim();
+    voices()
+        .into_iter()
+        .find(|voice| voice.name.eq_ignore_ascii_case(trimmed))
+        .map(|voice| voice.name)
+}
+
 pub fn tags() -> Vec<Tag> {
     use TagCategory::*;
     vec![
+        Tag {
+            tag: "[amazed]",
+            category: Emotion,
+            use_for: "wonder, impressed surprise, reveal moments",
+            example: "[amazed] I did not expect the result to sound this natural.",
+        },
+        Tag {
+            tag: "[curious]",
+            category: Emotion,
+            use_for: "inquiring, open-ended, exploratory delivery",
+            example: "[curious] What happens if we try the Italian line next?",
+        },
+        Tag {
+            tag: "[excited]",
+            category: Emotion,
+            use_for: "documented positive excitement tag",
+            example: "[excited] The audio is ready.",
+        },
         Tag {
             tag: "[excitedly]",
             category: Emotion,
             use_for: "positive energy and launch momentum",
             example: "[excitedly] This is the part you have been waiting for.",
+        },
+        Tag {
+            tag: "[bored]",
+            category: Emotion,
+            use_for: "flat boredom or reluctant attention",
+            example: "[bored] Another status update.",
+        },
+        Tag {
+            tag: "[reluctantly]",
+            category: Emotion,
+            use_for: "hesitation, resistance, or unwilling admission",
+            example: "[reluctantly] Fine, the first version was not tested enough.",
         },
         Tag {
             tag: "[warmly]",
@@ -246,6 +288,12 @@ pub fn tags() -> Vec<Tag> {
             example: "[sarcastically] Brilliant, another login screen.",
         },
         Tag {
+            tag: "[sarcastic]",
+            category: Emotion,
+            use_for: "documented concise sarcasm tag",
+            example: "[sarcastic] Perfect, the one command nobody tested.",
+        },
+        Tag {
             tag: "[mischievously]",
             category: Emotion,
             use_for: "playful reveal or character line",
@@ -262,6 +310,12 @@ pub fn tags() -> Vec<Tag> {
             category: Emotion,
             use_for: "fatigue, boredom, end-of-day delivery",
             example: "[tired] We can fix the build in the morning.",
+        },
+        Tag {
+            tag: "[trembling]",
+            category: Emotion,
+            use_for: "fear, fragility, or unstable emotion",
+            example: "[trembling] I heard the alert again.",
         },
         Tag {
             tag: "[crying]",
@@ -298,6 +352,12 @@ pub fn tags() -> Vec<Tag> {
             category: Volume,
             use_for: "quiet aside, suspense, intimacy",
             example: "[whispers] This is the hidden part.",
+        },
+        Tag {
+            tag: "[whisper]",
+            category: Volume,
+            use_for: "documented singular whisper form",
+            example: "[whisper] Keep this part quiet.",
         },
         Tag {
             tag: "[softly]",
@@ -348,6 +408,12 @@ pub fn tags() -> Vec<Tag> {
             example: "[gasp] The preview deploy is public.",
         },
         Tag {
+            tag: "[yawn]",
+            category: Nonverbal,
+            use_for: "tiredness, boredom, or sleepy character delivery",
+            example: "[yawn] What is on the agenda today?",
+        },
+        Tag {
             tag: "[cough]",
             category: Nonverbal,
             use_for: "awkwardness, interruption, character texture",
@@ -393,243 +459,112 @@ pub fn tags() -> Vec<Tag> {
 }
 
 pub fn languages() -> Vec<Language> {
-    vec![
-        Language {
-            code: "af-za",
-            name: "Afrikaans",
-            hint: "Use English tags with Afrikaans transcript.",
-        },
-        Language {
-            code: "am-et",
-            name: "Amharic",
-            hint: "Keep tags in English for best control.",
-        },
-        Language {
-            code: "ar-001",
-            name: "Arabic",
-            hint: "General Arabic locale hint.",
-        },
-        Language {
-            code: "ar-eg",
-            name: "Arabic (Egypt)",
-            hint: "Specify Egyptian Arabic if dialect matters.",
-        },
-        Language {
-            code: "az-az",
-            name: "Azerbaijani",
-            hint: "Use a clear language note in director notes.",
-        },
-        Language {
-            code: "bg-bg",
-            name: "Bulgarian",
-            hint: "Use English control tags.",
-        },
-        Language {
-            code: "bn-bd",
-            name: "Bengali",
-            hint: "Use English tags with Bengali text.",
-        },
-        Language {
-            code: "ca-es",
-            name: "Catalan",
-            hint: "Add region if accent matters.",
-        },
-        Language {
-            code: "cmn-cn",
-            name: "Chinese Mandarin (China)",
-            hint: "Use Mandarin Chinese transcript.",
-        },
-        Language {
-            code: "cmn-tw",
-            name: "Chinese Mandarin (Taiwan)",
-            hint: "Use Taiwan Mandarin phrasing.",
-        },
-        Language {
-            code: "cs-cz",
-            name: "Czech",
-            hint: "Use English tags.",
-        },
-        Language {
-            code: "da-dk",
-            name: "Danish",
-            hint: "Add Danish language note.",
-        },
-        Language {
-            code: "de-de",
-            name: "German",
-            hint: "Specify standard German or regional accent.",
-        },
-        Language {
-            code: "el-gr",
-            name: "Greek",
-            hint: "Use Greek transcript with English tags.",
-        },
-        Language {
-            code: "en-au",
-            name: "English (Australia)",
-            hint: "Useful for Australian accent direction.",
-        },
-        Language {
-            code: "en-gb",
-            name: "English (United Kingdom)",
-            hint: "Use with specific accent notes such as London or Croydon.",
-        },
-        Language {
-            code: "en-in",
-            name: "English (India)",
-            hint: "Use with Indian English accent direction.",
-        },
-        Language {
-            code: "en-us",
-            name: "English (United States)",
-            hint: "Default US English hint.",
-        },
-        Language {
-            code: "es-419",
-            name: "Spanish (Latin America)",
-            hint: "General Latin American Spanish.",
-        },
-        Language {
-            code: "es-es",
-            name: "Spanish (Spain)",
-            hint: "Castilian Spanish direction.",
-        },
-        Language {
-            code: "es-mx",
-            name: "Spanish (Mexico)",
-            hint: "Mexican Spanish direction.",
-        },
-        Language {
-            code: "es-us",
-            name: "Spanish (United States)",
-            hint: "US Spanish direction.",
-        },
-        Language {
-            code: "fa-ir",
-            name: "Persian",
-            hint: "Use Persian transcript with English tags.",
-        },
-        Language {
-            code: "fi-fi",
-            name: "Finnish",
-            hint: "Use English tags.",
-        },
-        Language {
-            code: "fil-ph",
-            name: "Filipino",
-            hint: "Specify Filipino or Tagalog phrasing.",
-        },
-        Language {
-            code: "fr-ca",
-            name: "French (Canada)",
-            hint: "Canadian French direction.",
-        },
-        Language {
-            code: "fr-fr",
-            name: "French (France)",
-            hint: "French from France direction.",
-        },
-        Language {
-            code: "he-il",
-            name: "Hebrew",
-            hint: "Use Hebrew transcript with English tags.",
-        },
-        Language {
-            code: "hi-in",
-            name: "Hindi",
-            hint: "Hindi transcript with English tags.",
-        },
-        Language {
-            code: "id-id",
-            name: "Indonesian",
-            hint: "Use Indonesian transcript.",
-        },
-        Language {
-            code: "it-it",
-            name: "Italian",
-            hint: "Standard Italian direction.",
-        },
-        Language {
-            code: "ja-jp",
-            name: "Japanese",
-            hint: "Japanese transcript with English tags.",
-        },
-        Language {
-            code: "ko-kr",
-            name: "Korean",
-            hint: "Korean transcript with English tags.",
-        },
-        Language {
-            code: "nl-nl",
-            name: "Dutch",
-            hint: "Dutch transcript.",
-        },
-        Language {
-            code: "pl-pl",
-            name: "Polish",
-            hint: "Polish transcript.",
-        },
-        Language {
-            code: "pt-br",
-            name: "Portuguese (Brazil)",
-            hint: "Brazilian Portuguese direction.",
-        },
-        Language {
-            code: "pt-pt",
-            name: "Portuguese (Portugal)",
-            hint: "European Portuguese direction.",
-        },
-        Language {
-            code: "ro-ro",
-            name: "Romanian",
-            hint: "Romanian transcript.",
-        },
-        Language {
-            code: "ru-ru",
-            name: "Russian",
-            hint: "Russian transcript.",
-        },
-        Language {
-            code: "sv-se",
-            name: "Swedish",
-            hint: "Swedish transcript.",
-        },
-        Language {
-            code: "ta-in",
-            name: "Tamil",
-            hint: "Tamil transcript with English tags.",
-        },
-        Language {
-            code: "te-in",
-            name: "Telugu",
-            hint: "Telugu transcript with English tags.",
-        },
-        Language {
-            code: "th-th",
-            name: "Thai",
-            hint: "Thai transcript with English tags.",
-        },
-        Language {
-            code: "tr-tr",
-            name: "Turkish",
-            hint: "Turkish transcript.",
-        },
-        Language {
-            code: "uk-ua",
-            name: "Ukrainian",
-            hint: "Ukrainian transcript.",
-        },
-        Language {
-            code: "ur-pk",
-            name: "Urdu",
-            hint: "Urdu transcript with English tags.",
-        },
-        Language {
-            code: "vi-vn",
-            name: "Vietnamese",
-            hint: "Vietnamese transcript.",
-        },
-    ]
+    let entries = [
+        ("ar", "Arabic"),
+        ("bn", "Bangla"),
+        ("nl", "Dutch"),
+        ("en", "English"),
+        ("fr", "French"),
+        ("de", "German"),
+        ("hi", "Hindi"),
+        ("id", "Indonesian"),
+        ("it", "Italian"),
+        ("ja", "Japanese"),
+        ("ko", "Korean"),
+        ("mr", "Marathi"),
+        ("pl", "Polish"),
+        ("pt", "Portuguese"),
+        ("ro", "Romanian"),
+        ("ru", "Russian"),
+        ("es", "Spanish"),
+        ("ta", "Tamil"),
+        ("te", "Telugu"),
+        ("th", "Thai"),
+        ("tr", "Turkish"),
+        ("uk", "Ukrainian"),
+        ("vi", "Vietnamese"),
+        ("af", "Afrikaans"),
+        ("sq", "Albanian"),
+        ("am", "Amharic"),
+        ("hy", "Armenian"),
+        ("az", "Azerbaijani"),
+        ("eu", "Basque"),
+        ("be", "Belarusian"),
+        ("bg", "Bulgarian"),
+        ("my", "Burmese"),
+        ("ca", "Catalan"),
+        ("ceb", "Cebuano"),
+        ("cmn", "Chinese, Mandarin"),
+        ("hr", "Croatian"),
+        ("cs", "Czech"),
+        ("da", "Danish"),
+        ("et", "Estonian"),
+        ("fil", "Filipino"),
+        ("fi", "Finnish"),
+        ("gl", "Galician"),
+        ("ka", "Georgian"),
+        ("el", "Greek"),
+        ("gu", "Gujarati"),
+        ("ht", "Haitian Creole"),
+        ("he", "Hebrew"),
+        ("hu", "Hungarian"),
+        ("is", "Icelandic"),
+        ("jv", "Javanese"),
+        ("kn", "Kannada"),
+        ("kok", "Konkani"),
+        ("lo", "Lao"),
+        ("la", "Latin"),
+        ("lv", "Latvian"),
+        ("lt", "Lithuanian"),
+        ("lb", "Luxembourgish"),
+        ("mk", "Macedonian"),
+        ("mai", "Maithili"),
+        ("mg", "Malagasy"),
+        ("ms", "Malay"),
+        ("ml", "Malayalam"),
+        ("mn", "Mongolian"),
+        ("ne", "Nepali"),
+        ("nb", "Norwegian, Bokmal"),
+        ("nn", "Norwegian, Nynorsk"),
+        ("or", "Odia"),
+        ("ps", "Pashto"),
+        ("fa", "Persian"),
+        ("pa", "Punjabi"),
+        ("sr", "Serbian"),
+        ("sd", "Sindhi"),
+        ("si", "Sinhala"),
+        ("sk", "Slovak"),
+        ("sl", "Slovenian"),
+        ("sw", "Swahili"),
+        ("sv", "Swedish"),
+        ("ur", "Urdu"),
+    ];
+
+    entries
+        .into_iter()
+        .map(|(code, name)| Language {
+            code,
+            name,
+            hint: language_hint(code),
+        })
+        .collect()
+}
+
+fn language_hint(code: &str) -> &'static str {
+    match code {
+        "it" => {
+            "Official Gemini TTS code is it. There are no Italian-specific voice IDs; use an Italian transcript plus accent/style direction."
+        }
+        "en" => {
+            "Official Gemini TTS code is en. Add accent direction when regional English matters."
+        }
+        "cmn" => {
+            "Official Gemini TTS code is cmn for Mandarin Chinese. Use Mandarin transcript and English tags."
+        }
+        _ => {
+            "Official Gemini TTS language code. The model auto-detects transcript language; keep inline audio tags in English for best control."
+        }
+    }
 }
 
 pub fn recipes() -> Vec<Recipe> {

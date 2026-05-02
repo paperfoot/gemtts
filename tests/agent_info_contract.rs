@@ -70,6 +70,18 @@ fn voices_list_is_routable() {
 }
 
 #[test]
+fn voices_match_google_documented_count() {
+    let out = bin().args(["voices", "list", "--json"]).output().unwrap();
+    assert!(out.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let voices = json["data"].as_array().unwrap();
+    assert_eq!(voices.len(), 30);
+    for name in ["Zephyr", "Puck", "Charon", "Kore", "Sulafat"] {
+        assert!(voices.iter().any(|v| v["name"] == name));
+    }
+}
+
+#[test]
 fn tags_list_is_routable() {
     bin().args(["tags", "list"]).assert().code(0);
 }
@@ -77,6 +89,24 @@ fn tags_list_is_routable() {
 #[test]
 fn languages_list_is_routable() {
     bin().args(["languages", "list"]).assert().code(0);
+}
+
+#[test]
+fn languages_use_google_documented_base_codes() {
+    let out = bin()
+        .args(["languages", "list", "--json"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let languages = json["data"].as_array().unwrap();
+    assert!(languages.len() >= 70);
+    assert!(
+        languages
+            .iter()
+            .any(|l| l["code"] == "it" && l["name"] == "Italian")
+    );
+    assert!(!languages.iter().any(|l| l["code"] == "it-it"));
 }
 
 #[test]
@@ -133,6 +163,20 @@ fn auth_status_is_routable() {
     bin().args(["auth", "status"]).assert().code(0);
 }
 
+#[test]
+fn script_uses_explicit_transcript_preamble() {
+    let out = bin()
+        .args(["script", "Hello there", "--json"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let prompt = json["data"]["prompt"].as_str().unwrap();
+    assert!(prompt.starts_with("Synthesize speech for the performance defined below."));
+    assert!(prompt.contains("Speak only the lines under #### TRANSCRIPT."));
+    assert!(prompt.contains("#### TRANSCRIPT\nHello there"));
+}
+
 // ── Enriched schema ────────────────────────────────────────────────────────
 
 #[test]
@@ -175,4 +219,18 @@ fn config_metadata_present() {
     assert!(config["path"].is_string());
     assert!(config["env_prefix"].is_string());
     assert!(config["env_prefix"].as_str().unwrap().ends_with('_'));
+}
+
+#[test]
+fn google_tts_facts_are_documented_for_agents() {
+    let info = agent_info();
+    let facts = &info["google_tts_facts"];
+    assert_eq!(facts["default_model"], "gemini-3.1-flash-tts-preview");
+    assert_eq!(facts["voice_count"], 30);
+    assert!(
+        facts["language_policy"]
+            .as_str()
+            .unwrap()
+            .contains("auto-detects")
+    );
 }

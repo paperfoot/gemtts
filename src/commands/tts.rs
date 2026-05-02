@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use crate::audio::{self, AudioWriteResult};
+use crate::catalog;
 use crate::cli::{LintArgs, ScriptArgs, SpeakArgs};
 use crate::config::{self, AppConfig};
 use crate::error::AppError;
@@ -25,17 +26,23 @@ struct SpeakResult {
 pub fn speak(ctx: Ctx, args: SpeakArgs, config: &AppConfig) -> Result<(), AppError> {
     let transcript = prompt::load_text(&args.text, args.text_file)?;
     let prompt_build = prompt::build_for_speak(&transcript, &args, config)?;
-    let (_source, api_key) = config::require_api_key(config)?;
-    let _guard = GenerationGuard::acquire(args.force)?;
-
     let model = args
         .model
         .clone()
         .unwrap_or_else(|| config.defaults.model.clone());
-    let voice = args
+    let voice_input = args
         .voice
         .clone()
         .unwrap_or_else(|| config.defaults.voice.clone());
+    let Some(voice) = catalog::canonical_voice_name(&voice_input).map(str::to_string) else {
+        return Err(AppError::InvalidInput(format!(
+            "unsupported Gemini TTS voice {voice_input:?}. Valid voices: {}",
+            catalog::voice_names().join(", ")
+        )));
+    };
+    let (_source, api_key) = config::require_api_key(config)?;
+    let _guard = GenerationGuard::acquire(args.force)?;
+
     let request = GenerateRequest {
         model: model.clone(),
         prompt: prompt_build.prompt.clone(),
@@ -276,6 +283,34 @@ pub fn doctor(
                 }),
                 Err(e) => checks.push(DoctorCheck {
                     name: "live_model".into(),
+                    status: if e.exit_code() == 4 { "warn" } else { "fail" }.into(),
+                    message: e.to_string(),
+                    suggestion: Some(e.suggestion().into()),
+                }),
+            }
+
+            let request = GenerateRequest {
+                model: config.defaults.model.clone(),
+                prompt: "Say clearly: Gemini TTS live check.".into(),
+                voice: config.defaults.voice.clone(),
+                speakers: Vec::new(),
+                timeout_seconds: config.defaults.timeout_seconds,
+            };
+            match gemini::generate(&api_key, &request) {
+                Ok(audio) if !audio.pcm.is_empty() => checks.push(DoctorCheck {
+                    name: "live_audio".into(),
+                    status: "pass".into(),
+                    message: format!("{} bytes, {}", audio.pcm.len(), audio.mime_type),
+                    suggestion: None,
+                }),
+                Ok(_) => checks.push(DoctorCheck {
+                    name: "live_audio".into(),
+                    status: "fail".into(),
+                    message: "Gemini returned empty audio data".into(),
+                    suggestion: Some("Retry once; if it repeats, check model/key status.".into()),
+                }),
+                Err(e) => checks.push(DoctorCheck {
+                    name: "live_audio".into(),
                     status: if e.exit_code() == 4 { "warn" } else { "fail" }.into(),
                     message: e.to_string(),
                     suggestion: Some(e.suggestion().into()),

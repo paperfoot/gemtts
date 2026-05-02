@@ -18,7 +18,7 @@ pub fn run() {
                     {"name": "--out", "type": "path", "default": "speech.wav", "description": "Output audio file"},
                     {"name": "--format", "type": "enum", "values": ["auto", "wav", "pcm", "mp3", "m4a", "flac"], "default": "auto", "description": "wav/pcm native; mp3/m4a/flac require ffmpeg"},
                     {"name": "--voice", "type": "string", "default": "config.defaults.voice", "description": "Single-speaker Gemini prebuilt voice"},
-                    {"name": "--speaker", "type": "repeat NAME=VOICE", "description": "Multi-speaker cast, up to 2 speakers. Transcript names must match."},
+                    {"name": "--speaker", "type": "repeat NAME=VOICE", "description": "Multi-speaker cast, exactly 2 speakers when used. Transcript names must match."},
                     {"name": "--model", "type": "string", "default": "gemini-3.1-flash-tts-preview"},
                     {"name": "--profile/--scene/--style/--pace/--accent/--language/--tag", "type": "string", "description": "Prompt direction fields. If present, the CLI builds a structured TTS prompt."},
                     {"name": "--raw", "type": "bool", "default": false, "description": "Pass text exactly as the Gemini prompt"},
@@ -59,7 +59,7 @@ pub fn run() {
                 "options": [{"name": "--query", "type": "string"}]
             },
             "doctor": {
-                "description": "Check config, key, ffmpeg, and optional live Gemini model access.",
+                "description": "Check config, key, ffmpeg, and optional live Gemini model plus audio generation access.",
                 "options": [{"name": "--live", "type": "bool"}, {"name": "--require-ffmpeg", "type": "bool"}]
             },
             "auth set/import-env/status": {
@@ -70,7 +70,7 @@ pub fn run() {
             "skill status": {"description": "Check skill installation status", "args": [], "options": []},
             "config show/path/init/set/get": {"description": "Manage ~/.config/gemini-tts-cli/config.toml", "args": [], "options": []},
             "update": {
-                "description": "Self-update binary from GitHub Releases",
+                "description": "Check crates.io version and print source-aware cargo/Homebrew update guidance.",
                 "args": [],
                 "options": [{"name": "--check", "type": "bool", "required": false, "default": false}]
             }
@@ -82,10 +82,12 @@ pub fn run() {
             "before_important_jobs": format!("{name} doctor --live --json"),
             "prompt_rules": [
                 "Use global director notes for style, pace, accent, and language; use inline square-bracket tags only for local changes.",
+                "The 30 Gemini voice names are prebuilt voice timbres, not per-language voices.",
+                "Gemini TTS auto-detects transcript language. For Italian, use language code it or an Italian transcript plus --accent/--style direction; do not invent an Italian voice ID.",
                 "Keep tag instructions in English even when the transcript is not English.",
                 "Do not strip or normalize bracket tags before speak; Gemini uses them for delivery control.",
                 "Avoid tag inflation. If every sentence has tags, move the pattern into director notes.",
-                "For multi-speaker output, pass --speaker Name=Voice and make transcript lines start with exactly Name:.",
+                "For multi-speaker output, pass exactly two --speaker Name=Voice mappings and make transcript lines start with exactly Name:.",
                 "Short takes are more reliable than long single generations. Lint warns when scripts are likely too long."
             ]
         },
@@ -116,6 +118,23 @@ pub fn run() {
             "sample_rate": 24000,
             "channels": 1,
             "stdout_contract": "stdout is metadata only; audio is written to --out"
+        },
+        "google_tts_facts": {
+            "endpoint": "POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            "model_check_endpoint": "GET https://generativelanguage.googleapis.com/v1beta/models/{model}",
+            "default_model": "gemini-3.1-flash-tts-preview",
+            "voice_count": 30,
+            "voice_policy": "Voice names are language-neutral prebuilt timbres from Google docs; language is not selected through voiceName.",
+            "language_policy": "TTS auto-detects transcript language. The language catalog uses Google's documented BCP-47 codes; inline tags should generally stay in English.",
+            "output_policy": "Gemini TTS returns base64 inline audio as raw signed 16-bit 24 kHz mono PCM. The CLI wraps WAV itself and uses ffmpeg for compressed formats.",
+            "limits": [
+                "Text input only, audio output only",
+                "Model page lists 8192 input tokens and 16384 output tokens for gemini-3.1-flash-tts-preview",
+                "Speech guide also describes a 32k-token TTS session context window",
+                "No streaming for TTS",
+                "Up to 2 speakers in multi-speaker config",
+                "Preview model can occasionally return server errors or classifier rejections; the CLI retries transient generation failures"
+            ]
         },
         "auto_json_when_piped": true
     });

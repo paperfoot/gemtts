@@ -71,6 +71,45 @@ fn invalid_format_rejected() {
         .code(3);
 }
 
+#[test]
+fn invalid_voice_rejected_before_api_key_lookup() {
+    let tmp = tempfile::tempdir().unwrap();
+    bin()
+        .env("HOME", tmp.path())
+        .env_remove("GEMINI_API_KEY")
+        .env_remove("GOOGLE_API_KEY")
+        .env_remove("GOOGLE_AI_API_KEY")
+        .args(["speak", "World", "--voice", "ItalianVoice"])
+        .assert()
+        .code(3);
+}
+
+#[test]
+fn single_speaker_mapping_is_rejected() {
+    bin()
+        .args(["script", "Host: Hello", "--speaker", "Host=Kore"])
+        .assert()
+        .code(3);
+}
+
+#[test]
+fn speaker_voice_names_are_canonicalized() {
+    bin()
+        .args([
+            "script",
+            "Host: Hello\nGuest: Ciao",
+            "--speaker",
+            "Host=kore",
+            "--speaker",
+            "Guest=puck",
+            "--json",
+        ])
+        .assert()
+        .code(0)
+        .stdout(predicates::str::contains("\"voice\": \"Kore\""))
+        .stdout(predicates::str::contains("\"voice\": \"Puck\""));
+}
+
 /// script command works without --quiet even when HOME is unusual.
 #[test]
 fn script_works_with_temp_home() {
@@ -80,4 +119,26 @@ fn script_works_with_temp_home() {
         .args(["script", "World"])
         .assert()
         .code(0);
+}
+
+#[test]
+fn env_api_key_overrides_config_key() {
+    let tmp = tempfile::tempdir().unwrap();
+    let config_dir = config_dir_in(tmp.path());
+    std::fs::create_dir_all(&config_dir).unwrap();
+    std::fs::write(
+        config_dir.join("config.toml"),
+        "[keys]\napi_key = \"config-key-123456\"\n",
+    )
+    .unwrap();
+
+    bin()
+        .env("HOME", tmp.path())
+        .env("GEMINI_API_KEY", "env-key-123456")
+        .args(["config", "show", "--json"])
+        .assert()
+        .code(0)
+        .stdout(predicates::str::contains(
+            "\"api_key_source\": \"GEMINI_API_KEY\"",
+        ));
 }
